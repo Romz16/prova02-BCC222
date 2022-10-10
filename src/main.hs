@@ -70,4 +70,7 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) l c && validaEntrada (x:xs
     
 --EX5
 
-      
+--EX6
+pLine :: Parser Char Line
+   pLine = symbol 
+
