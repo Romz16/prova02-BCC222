@@ -207,9 +207,9 @@ current
   =do
     (r,m) <- get
     return getPoint r
-where 
-  getPoint:: Robot -> Point
-  getPoint r = position r
+  where 
+    getPoint:: Robot -> Point
+    getPoint r = position r
 
 mine :: ConfM Mine
 mine 
@@ -222,6 +222,9 @@ getMine
   = do
       (r, m) <- get
       return m
+
+getElement :: Mine -> Point -> Element
+getElement m (x, y) = elements m !! x !! y
 
 
 enoughEnergy :: Int -> ConfM Bool
@@ -246,40 +249,68 @@ incEnergy
       getEnergyPlus r = energy r +1
 
 verificaParede :: Mine -> Point -> Bool
-validaPosicao m (x,y) = if elements m !! x !! y == Wall
+verificaParede m (x,y) = if elements m !! x !! y == Wall
                         then False
                         else True
 
-verificaMateriais :: Mine -> Point -> Bool
+verificaColeta :: Mine -> Point -> Bool
 verificaMateriais m (x,y) = elements m !! (x+1) !! y == Material
                             || elements m !! (x-1) !! y == Material
                             || elements m !! x !! (y+1) == Material
                             || elements m !! x !! (y-1) == Material
+
 valid :: Instr -> ConfM Bool
 valid L
   = do
-    energy <- enoughEnergy 1
     (x, y) <- current
     mina <- getMine 
-    return energy && validaPosicao mina (x-1, y)
+    element = getElement mina (x-1,y)
+    energy = enoughEnergy energiaNecessaria element
+      where
+        energiaNecessaria :: Element -> Int
+        energiaNecessaria x = 
+          if(x == Rock) then 30
+          else if(x == Earth) then 5
+          else 1
+    return energy && verificaParede mina (x-1, y)
 valid R
   = do
-    energy <- enoughEnergy 1
     (x, y) <- current
     mina <- getMine 
-    return energy && validaPosicao mina (x+1, y) 
+    element = getElement mina (x+1,y)
+    energy = enoughEnergy energiaNecessaria element
+      where
+        energiaNecessaria :: Element -> Int
+        energiaNecessaria x = 
+          if(x == Rock) then 30
+          else if(x == Earth) then 5
+          else 1
+    return energy && verificaParede mina (x+1, y) 
 valid U
   = do
-    energy <- enoughEnergy 1
     (x, y) <- current
     mina <- getMine 
-    return energy && validaPosicao mina (x, y-1) 
+    element = getElement mina (x,y-1)
+    energy = enoughEnergy energiaNecessaria element
+      where
+        energiaNecessaria :: Element -> Int
+        energiaNecessaria x = 
+          if(x == Rock) then 30
+          else if(x == Earth) then 5
+          else 1
+    return energy && verificaParede mina (x, y-1) 
 valid D
-  = do
-    energy <- enoughEnergy 1
-    (x, y) <- current
+ (x, y) <- current
     mina <- getMine 
-    return energy && validaPosicao mina (x-1, y+1)
+    element = getElement mina (x,y+1)
+    energy = enoughEnergy energiaNecessaria element
+      where
+        energiaNecessaria :: Element -> Int
+        energiaNecessaria x = 
+          if(x == Rock) then 30
+          else if(x == Earth) then 5
+          else 1
+    return energy && verificaParede mina (x, y+1)
 valid C
  = do
   energy <- enoughEnergy 10
