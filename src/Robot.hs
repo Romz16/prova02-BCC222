@@ -145,18 +145,20 @@ exampleMine =
     }
 
 pLine :: Parser Char Line
-pLine = Parser(\ inp -> case inp of
-      []->[]
-      (x:xs)-> if pElement x
-                  then [(x,xs)]
-                  else [])
+pLine = f <$> pElement
+      where
+        f c = [head c]
+--lineParser = listOf pElement (symbol ’ ’)
 
 pMine :: Parser Char Mine
-pMine = Parser(\ inp -> case inp of
-   []->[]
-   (x:xs)-> if pLine x
-      then[(x,xs)]
-      else[])
+pMine = transformaEmMina l <$> listOf pLine (symbol '\n') 
+  where
+transformaEmMina::[Element]->Mine
+trasnformaEmMina l =  Mine
+            { Robot.lines = length l,
+              Robot.columns = length (head l),
+              Robot.elements = l
+            }
 
 
 data Instr = L -- move para esquerda
@@ -169,10 +171,10 @@ data Instr = L -- move para esquerda
 
 pInst :: Parser Char Instr
 pInst =     f <$> (symbol 'l' -- esquerda
-                  <|> symbol 'L' -- esquerda
-                  <|> symbol 'r' -- direita
-                  <|> symbol 'R' -- direita
-                  <|> symbol 'u' -- cima
+                  <|>symbol 'L' -- esquerda
+                  <|>symbol 'r' -- direita
+                  <|>symbol 'R' -- direita
+                  <|>symbol 'u' -- cima
                   <|>symbol 'U' -- cima
                   <|>symbol 'd' -- baixo
                   <|>symbol 'D' -- baixo
@@ -194,7 +196,7 @@ pInst =     f <$> (symbol 'l' -- esquerda
                   | otherwise = error "Invalid Command"
 
 pProgram :: Parser Char [Instr]
-pProgram = undefined
+pProgram = greedy1 pInstr
 
 type Conf = (Robot, Mine)
 
@@ -202,7 +204,10 @@ type ConfM a = State Conf a
 
 
 current :: ConfM Point
-current = undefined
+current = getPoint a 
+where 
+  getPoint:: Robot -> Point
+  getPoint r = position r
 
 mine :: ConfM Mine
 mine = undefined
