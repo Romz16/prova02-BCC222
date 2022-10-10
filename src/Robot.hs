@@ -217,6 +217,13 @@ mine
      (l,n,e) <- get
      return(l,n,length e)
 
+getMine :: ConfM Mine
+getMine
+  = do
+      (r, m) <- get
+      return m
+
+
 enoughEnergy :: Int -> ConfM Bool
 enoughEnergy n
   =do
@@ -238,11 +245,48 @@ incEnergy
       getEnergyPlus:: Robot->Fuel
       getEnergyPlus r = energy r +1
 
-    
+verificaParede :: Mine -> Point -> Bool
+validaPosicao m (x,y) = if elements m !! x !! y == Wall
+                        then False
+                        else True
 
+verificaMateriais :: Mine -> Point -> Bool
+verificaMateriais m (x,y) = elements m !! (x+1) !! y == Material
+                            || elements m !! (x-1) !! y == Material
+                            || elements m !! x !! (y+1) == Material
+                            || elements m !! x !! (y-1) == Material
 valid :: Instr -> ConfM Bool
-valid = undefined
-
+valid L
+  = do
+    energy <- enoughEnergy 1
+    (x, y) <- current
+    mina <- getMine 
+    return energy && validaPosicao mina (x-1, y)
+valid R
+  = do
+    energy <- enoughEnergy 1
+    (x, y) <- current
+    mina <- getMine 
+    return energy && validaPosicao mina (x+1, y) 
+valid U
+  = do
+    energy <- enoughEnergy 1
+    (x, y) <- current
+    mina <- getMine 
+    return energy && validaPosicao mina (x, y-1) 
+valid D
+  = do
+    energy <- enoughEnergy 1
+    (x, y) <- current
+    mina <- getMine 
+    return energy && validaPosicao mina (x-1, y+1)
+valid C
+ = do
+  energy <- enoughEnergy 10
+  (x, y) <- current
+  mina <- getMine
+  return energy && verificaMateriais
+valid S = return True
 
 updateMine :: Instr -> ConfM ()
 updateMine = undefined
