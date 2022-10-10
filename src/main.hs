@@ -124,3 +124,34 @@ pMine = Parser(\ inp -> case inp of
    (x:xs)-> if pLine x
       then[(x,xs)]
       else[])
+
+--Ex7
+instance Show Mine where
+   ShowList (Mine a b (x:xs)) =(\y -> intercalate "" $ map show xs)
+
+--EX8
+pInst :: Parser Char Inst
+pInst =     f <$> (symbol 'l' <|> -- esquerda
+                  symbol 'L' <|> -- esquerda
+                  symbol 'r' <|> -- direita
+                  symbol 'R' <|> -- direita
+                  symbol 'u' <|> -- cima
+                  symbol 'U' <|> -- cima
+                  symbol 'd' <|> -- baixo
+                  symbol 'D' <|> -- baixo
+                  symbol 's' <|> -- recarregar
+                  symbol 'S' <|>  -- recarregar
+                 )
+            where
+                f res
+                  | res == 'l' = L
+                  | res == 'L' = L
+                  | res == 'r' = R
+                  | res == 'R' = R
+                  | res == 'u' = U
+                  | res == 'U' = U
+                  | res == 'd' = D
+                  | res == 'D' = D
+                  | res == 's' = S
+                  | res == "S" = S
+                  | otherwise = error "Invalid Command"
