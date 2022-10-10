@@ -202,21 +202,43 @@ type Conf = (Robot, Mine)
 
 type ConfM a = State Conf a
 
-
 current :: ConfM Point
-current = getPoint a 
+current 
+  =do
+    (r,m) <- get
+    return getPoint r
 where 
   getPoint:: Robot -> Point
   getPoint r = position r
 
 mine :: ConfM Mine
-mine = undefined
+mine 
+  =do
+     (l,n,e) <- get
+     return(l,n,length e)
 
 enoughEnergy :: Int -> ConfM Bool
-enoughEnergy = undefined
+enoughEnergy n
+  =do
+  (r,m) <- get
+  return validEnergy n r
+  where
+    validEnergy:: Int-> Robot->True
+      validEnergy n r = if n > energy r
+                        then False
+                        else True
 
 incEnergy :: ConfM ()
-incEnergy = undefined
+incEnergy 
+  =do
+    (r,m) <- get
+    let getEnergyPlus r
+    put(r,m)
+    where 
+      getEnergyPlus:: Robot->Fuel
+      getEnergyPlus r = energy r +1
+
+    
 
 valid :: Instr -> ConfM Bool
 valid = undefined
