@@ -1,5 +1,4 @@
 module Main (main) where
-
 import Robot
 import System.Environment (getArgs)
 

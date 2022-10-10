@@ -51,39 +51,23 @@ validMine :: Mine -> Bool
 
 validMine (Mine 0 0 [])       = True 
 validMine (Mine _ _ [])       = False 
-validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) l c && validaEntrada (x:xs) where
-   validaProporcoes  xs a b = length xs == a && length xs == b
-   validaEntrada [] _ _  = False
-   validaEntrada x = sat(x Entry)
-    
+validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) l c && validaEntrada (x:xs) a b 0 where
+   validaColuna ::[[Element]] -> Int ->Bool
+   validaColuna (x:xs)_ =True
+   validaColuna (x:xs)b = (lenght x ==b) && validaColuna
 
-                            
+   validaProporcoes:: [[Element]] -> Int -> Int ->Bool
+   validaProporcoes  xs a b = length xs == a && validaColune xs b
+   
+   
+   validaEntrada :: (Eq a, Num a) => [[Element]] -> a -> Int -> a-> Bool
+   validaEntrada [] _ _ _ = False
+   validaEntrada (x : xs) l c count 
+                      | count == 0     = if elem Entry x then True else procuraEntrada xs l c (count+1)  
+                      | count == (l-1) = if elem Entry x then True else False  
+                      | otherwise      = (fromMaybe (-1) $ elemIndex Entry x) == 0 || (fromMaybe (-1) $ elemIndex Entry x) == (c-1) || procuraEntrada xs l c (count+1) 
 
-module Main (main) where
+    
+--EX5
 
-    import Robot
-    import System.Environment (getArgs)
-    
-    {- 
-    stack build
-    stack exec prova02-exe
-    -}
-    
-    main :: IO ()
-    --main = run
-    main = do
-              args <- getArgs
-              doIt args
-    
-    doIt :: [String] -> IO ()
-    doIt [fm , fr]
-       = do
-            pm <- readLDM fm
-            pr <- readLCR fr
-            let
-               m = either error id pm
-               r = either error id pr
-               m' = run r m
-            print m'
-    doIt _ = putStrLn "Informe arquivos de entrada!"
-
+      
