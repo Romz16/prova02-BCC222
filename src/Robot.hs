@@ -364,8 +364,8 @@ updateMine C
     teste <- valid C
     (r,m) <- get
     (x, y) <- achaMinerio m (x,y)
-    if teste == True
-      then modify (\(r,m) -> (r, m{elements m !! x !! y = Empty}))
+    if teste == True then modify (\(r,m) -> (r, m{elements m !! x !! y = Empty}))
+    else return ()
         
 
 
