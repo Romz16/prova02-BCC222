@@ -264,8 +264,8 @@ valid L
   = do
     (x, y) <- current
     mina <- getMine 
-    element = getElement mina (x-1,y)
-    energy = enoughEnergy energiaNecessaria element
+    element <- getElement mina (x-1,y)
+    energy <- enoughEnergy energiaNecessaria element
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
@@ -277,8 +277,8 @@ valid R
   = do
     (x, y) <- current
     mina <- getMine 
-    element = getElement mina (x+1,y)
-    energy = enoughEnergy energiaNecessaria element
+    element <- getElement mina (x+1,y)
+    energy <- enoughEnergy energiaNecessaria element
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
@@ -290,8 +290,8 @@ valid U
   = do
     (x, y) <- current
     mina <- getMine 
-    element = getElement mina (x,y-1)
-    energy = enoughEnergy energiaNecessaria element
+    element <- getElement mina (x,y-1)
+    energy <- enoughEnergy energiaNecessaria element
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
@@ -302,8 +302,8 @@ valid U
 valid D
  (x, y) <- current
     mina <- getMine 
-    element = getElement mina (x,y+1)
-    energy = enoughEnergy energiaNecessaria element
+    element <- getElement mina (x,y+1)
+    energy <- enoughEnergy energiaNecessaria element
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
@@ -317,10 +317,58 @@ valid C
   (x, y) <- current
   mina <- getMine
   return energy && verificaMateriais
-valid S = return True
+valid S = return True 
+
+achaMinerio :: Mine -> Point -> Point
+achaMinerio m (x, y) = if elements m !! x+1 !! y == Material || Rock || Earth then (x+1,y)
+                       else if elements m !! x-1 !! y == Material || Rock || Earth then (x-1,y)
+                       else if elements m !! x !! y-1 == Material || Rock || Earth then (x,y-1)
+                       else if elements m !! x !! y+1 == Material || Rock || Earth then (x,y+1)
 
 updateMine :: Instr -> ConfM ()
-updateMine = undefined
+-- updateMine L
+--   = do
+--     teste <- valid L
+--     (x,y) <- current
+--     (r, m) <- get
+--     if teste == True
+--       then modify (\(r, m) -> (r {position = (x-1,y), energy = energy r - 1}, m))
+--       else return ()
+-- updateMine R
+--   = do
+--     teste <- valid R
+--     (x,y) <- current
+--     (r, m) <- get
+--     if teste == True
+--       then modify (\(r, m) -> (r {position = (x+1,y), energy = energy r - 1}, m))
+--       else return ()
+-- updateMine U
+--   = do
+--     teste <- valid U
+--     (x,y) <- current
+--     (r, m) <- get
+--     if teste == True
+--       then modify (\(r, m) -> (r {position = (x,y-1), energy = energy r - 1}, m))
+--       else return ()
+-- updateMine D
+--   = do
+--     teste <- valid D
+--     (x,y) <- current
+--     (r, m) <- get
+--     if teste == True
+--       then modify (\(r, m) -> (r {position = (x,y+1), energy = energy r - 1}, m))
+--       else return ()
+updateMine C
+  = do
+    (x, y) <- current
+    teste <- valid C
+    (r,m) <- get
+    (x, y) <- achaMinerio m (x,y)
+    if teste == True
+      then modify (\(r,m) -> (r, m{elements m !! x !! y = Empty}))
+        
+
+
 
 exec :: Instr -> ConfM ()
 exec = undefined
