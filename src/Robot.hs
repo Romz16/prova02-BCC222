@@ -82,14 +82,21 @@ data Mine = Mine {
               elements :: [Line]
             } deriving (Eq, Ord)
 
--- instance Show Mine where
---    ShowList (Mine a b xs) =(\y -> intercalate "" $ map show xs)
+instance Show Mine where
+    ShowList (Mine a b xs) =(\y -> intercalate "" $ map show xs)
 
+findEntry :: Mine -> Point
+findEntry m = (l, c)
+  where
+    ls = map (elemIndex Entry) (elements m)
+    jc = head $ filter (/= Nothing) ls
+    l = fromMaybe (-1) (elemIndex jc ls)
+    c = fromMaybe (-1) jc
 
 validMine :: Mine -> Bool
 validMine (Mine 0 0 [])       = True 
 validMine (Mine _ _ [])       = False 
-validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) l c && validaEntrada (x:xs) a b 0 where
+validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m  where
    validaColuna ::[[Element]] -> Int ->Bool
    validaColuna (x:xs)_ =True
    validaColuna (x:xs)b = (length x ==b) && validaColuna
@@ -98,12 +105,16 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) l c && validaEntrada (x:xs
    validaProporcoes  xs a b = length xs == a && validaColuna xs b
    
    
-   validaEntrada :: (Eq a, Num a) => [[Element]] -> a -> Int -> a-> Bool
-   validaEntrada [] _ _ _ = False
-   validaEntrada (x : xs) l c count 
-                      | count == 0     = if elem Entry x then True else procuraEntrada xs l c (count+1)  
-                      | count == (l-1) = if elem Entry x then True else False  
-                      | otherwise      = (fromMaybe (-1) $ elemIndex Entry x) == 0 || (fromMaybe (-1) $ elemIndex Entry x) == (c-1) || procuraEntrada xs l c (count+1) 
+  validaEntrada:: Mine  -> Bool
+  validaEntrada m 
+    --            | if findEntry m ==(l,-1) then False else  if c
+
+  -- validaEntrada :: (Eq a, Num a) => [[Element]] -> a -> Int -> a-> Bool
+   --validaEntrada [] _ _ _ = False
+  --validaEntrada (x : xs) l c count 
+   --                   | count == 0     = if elem Entry x then True else procuraEntrada xs l c (count+1)  
+     --                 | count == (l-1) = if elem Entry x then True else False  
+       --               | otherwise      = (fromMaybe (-1) $ elemIndex Entry x) == 0 || (fromMaybe (-1) $ elemIndex Entry x) == (c-1) || procuraEntrada xs l c (count+1) 
 
 linha1 :: Line
 linha1 = [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall]
@@ -148,7 +159,7 @@ pLine :: Parser Char Line
 pLine = f <$> pElement
       where
         f c = [head c]
---lineParser = listOf pElement (symbol ’ ’)
+--pLine = listOf pElement (symbol ’ ’)
 
 pMine :: Parser Char Mine
 pMine = transformaEmMina l <$> listOf pLine (symbol '\n') 
@@ -207,21 +218,13 @@ current
   =do
     (r,m) <- get
     return getPoint r
-  where 
-    getPoint:: Robot -> Point
-    getPoint r = position r
+  let r' =position r : r
+  put (r',m)
+    --getPoint:: Robot -> Point
+    --getPoint r = position r
 
 mine :: ConfM Mine
-mine 
-  =do
-     (l,n,e) <- get
-     return(l,n,length e)
-
-getMine :: ConfM Mine
-getMine
-  = do
-      (r, m) <- get
-      return m
+mine = gets $ snd
 
 getElement :: Mine -> Point -> Element
 getElement m (x, y) = elements m !! x !! y
@@ -231,22 +234,17 @@ enoughEnergy :: Int -> ConfM Bool
 enoughEnergy n
   =do
   (r,m) <- get
-  return validEnergy n r
-  where
-    validEnergy:: Int-> Robot->True
-      validEnergy n r = if n > energy r
-                        then False
-                        else True
+   let r' = if energy r > n then True else False
 
 incEnergy :: ConfM ()
 incEnergy 
   =do
     (r,m) <- get
-    let getEnergyPlus r
-    put(r,m)
+    let  r' = getEnergyPlus r
+    put (r',m)
     where 
       getEnergyPlus:: Robot->Fuel
-      getEnergyPlus r = energy r +1
+      getEnergyPlus r = energy+1 r 
 
 verificaParede :: Mine -> Point -> Bool
 verificaParede m (x,y) = if elements m !! x !! y == Wall
@@ -374,10 +372,12 @@ exec :: Instr -> ConfM ()
 exec = undefined
 
 initRobot :: Mine -> Robot
-initRobot = undefined
-
--- run :: [Instr] -> Mine -> Mine
--- run = undefined
+initRobot m =
+  Robot
+    { energy = 100,
+      position = findEntry m,
+      collected = 0
+    }
 
 readLDM :: String -> IO (Either String Mine)
 readLDM = undefined
