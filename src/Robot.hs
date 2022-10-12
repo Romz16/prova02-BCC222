@@ -97,7 +97,7 @@ findEntry m = (l, c)
 validMine :: Mine -> Bool
 validMine (Mine 0 0 [])       = True 
 validMine (Mine _ _ [])       = False 
-validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m  where
+validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m where
    validaColuna ::[[Element]] -> Int ->Bool
    validaColuna (x:xs)_ =True
    validaColuna (x:xs)b = (length x ==b) && validaColuna
@@ -106,8 +106,13 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m  wh
    validaProporcoes  xs a b = length xs == a && validaColuna xs b
    
    
-  validaEntrada:: Mine  -> Bool
-  validaEntrada m 
+  validaEntrada:: Mine  -> Point -> Bool
+  validaEntrada (Mine l c (x:xs)) 
+                |l' == 1||l' ==l  = if c'\= -1 then True else False
+                |l' < l && l'> 1  = if  c' \= -1  && c' ==1||c' == length x  then True else False
+                |otherwise = False
+                where (l', c') = findEntry Mine
+                
     --            | if findEntry m ==(l,-1) then False else  if c
 
   -- validaEntrada :: (Eq a, Num a) => [[Element]] -> a -> Int -> a-> Bool
