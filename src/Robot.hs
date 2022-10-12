@@ -83,7 +83,8 @@ data Mine = Mine {
             } deriving (Eq, Ord)
 
 instance Show Mine where
-    ShowList (Mine a b xs) =(\y -> intercalate "" $ map show xs)
+   -- ShowList (Mine a b xs) =(\y -> intercalate "" $ map show xs)
+     show (Mine l c e) = unlines $ map (unwords . map show) e
 
 findEntry :: Mine -> Point
 findEntry m = (l, c)
@@ -164,12 +165,12 @@ pLine = f <$> pElement
 pMine :: Parser Char Mine
 pMine = transformaEmMina l <$> listOf pLine (symbol '\n') 
   where
-transformaEmMina::[Element]->Mine
-trasnformaEmMina l =  Mine
-            { Robot.lines = length l,
-              Robot.columns = length (head l),
-              Robot.elements = l
-            }
+  transformaEmMina::[Element]->Mine
+  trasnformaEmMina l =  Mine
+              { Robot.lines = length l,
+                Robot.columns = length (head l),
+                Robot.elements = l
+              }
 
 
 data Instr = L -- move para esquerda
@@ -270,7 +271,8 @@ valid L
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-    return energy && verificaParede mina (x-1, y)
+          return energy && verificaParede mina (x-1, y)
+
 valid R
   = do
     (x, y) <- current
@@ -283,7 +285,8 @@ valid R
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-    return energy && verificaParede mina (x+1, y) 
+          return energy && verificaParede mina (x+1, y) 
+
 valid U
   = do
     (x, y) <- current
@@ -296,7 +299,8 @@ valid U
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-    return energy && verificaParede mina (x, y-1) 
+          return energy && verificaParede mina (x, y-1) 
+
 valid D
  (x, y) <- current
     mina <- getMine 
@@ -308,13 +312,15 @@ valid D
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-    return energy && verificaParede mina (x, y+1)
+          return energy && verificaParede mina (x, y+1)
+
 valid C
  = do
   energy <- enoughEnergy 10
   (x, y) <- current
   mina <- getMine
   return energy && verificaMateriais
+
 valid S = return True 
 
 achaMinerio :: Mine -> Point -> Point
