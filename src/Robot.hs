@@ -115,10 +115,10 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m whe
 
 --V2    
 
-validMine :: Mine -> Bool
-validMine (Mine 0 0 [])       = True 
-validMine (Mine _ _ [])       = False 
-validMine (Mine a b (x:xs):t) = validaProporcoes (x:xs) a b && possuiEntradaNaBordaAuxiliar  0 0 a b ((x:xs):t)) where
+validMine1 :: Mine -> Bool
+validMine1 (Mine 0 0 [])       = True 
+validMine1 (Mine _ _ [])       = False 
+validMine1 (Mine a b (x:xs):t) = validaProporcoes (x:xs) a b && possuiEntradaNaBordaAuxiliar  0 0 a b ((x:xs):t)) where
    validaColuna ::[[Element]] -> Int ->Bool
    validaColuna (x:xs)_ =True
    validaColuna (x:xs)b = (length x ==b) && validaColuna
@@ -350,6 +350,9 @@ achaMinerio m (x, y) = if elements m !! x+1 !! y == Material || Rock || Earth th
                        else if elements m !! x !! y-1 == Material || Rock || Earth then (x,y-1)
                        else if elements m !! x !! y+1 == Material || Rock || Earth then (x,y+1)
 
+updatePosition :: Point -> ConfM ()
+updatePosition p = modify (\(r, m) -> (r {position = p, energy = energy r - 1}, m))
+
 updateMine :: Instr -> ConfM ()
 updateMine L = do
   inst <- valid L
@@ -388,7 +391,18 @@ initRobot m =
     }
 
 readLDM :: String -> IO (Either String Mine)
-readLDM = undefined
+readLDM name = do
+           arq <- openFile name
+           conteudo <- hGetContents arq
+           pMine conteudo
+          if validMine conteudo then return conteudo
+          else putStrLn "Erro na Mina!!"
+
 
 readLCR :: String -> IO (Either String [Instr])
-readLCR = undefined
+readLDM name = do
+           arq <- openFile name
+           conteudo <- hGetContents arq
+           pProgram conteudo
+          if valid conteudo then return conteudo
+          else putStrLn "Erro na Mina!!"
