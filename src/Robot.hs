@@ -247,12 +247,6 @@ verificaParede m (x,y) = if elements m !! x !! y == Wall
                         then False
                         else True
 
-verificaColeta :: Mine -> Point -> Bool
-verificaMateriais m (x,y) = elements m !! (x+1) !! y == Material
-                            || elements m !! (x-1) !! y == Material
-                            || elements m !! x !! (y+1) == Material
-                            || elements m !! x !! (y-1) == Material
-
 temMinerio :: Mine -> Point -> Bool
 temMinerio m (x, y) 
           |  elements m !! x !! y == Material = True
