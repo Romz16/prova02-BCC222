@@ -211,6 +211,7 @@ pInst =     f <$> (symbol 'l' -- esquerda
                   <|>symbol 'U' -- cima
                   <|>symbol 'd' -- baixo
                   <|>symbol 'D' -- baixo
+                  <|>symbol 'C'
                   <|>symbol 's' -- recarregar
                   <|>symbol 'S'  -- recarregar
                  )
@@ -224,6 +225,7 @@ pInst =     f <$> (symbol 'l' -- esquerda
                   | res == 'U' = U
                   | res == 'd' = D
                   | res == 'D' = D
+                  | res == 'C' = C
                   | res == 's' = S
                   | res == "S" = S
                   | otherwise = error "Invalid Command"
@@ -353,6 +355,9 @@ achaMinerio m (x, y) = if elements m !! x+1 !! y == Material || Rock || Earth th
 updatePosition :: Point -> ConfM ()
 updatePosition p = modify (\(r, m) -> (r {position = p, energy = energy r - 1}, m))
 
+updateElem :: Point -> CongM()
+updateEleme (x,y) = modify(\(r,m)->(r,m{l,c elemnts !!x !!y = Empyt }))
+
 updateMine :: Instr -> ConfM ()
 updateMine L = do
   inst <- valid L
@@ -378,6 +383,12 @@ updateMine D = do
   if inst
     then updatePosition (x , y-1)
     else return ()
+updateMine C = do
+      inst <- valid C
+      (x, y) <- current
+      if inst
+        then updateElem (x , y)
+        else return ()
 
 exec :: Instr -> ConfM ()
 exec = undefined
