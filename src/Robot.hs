@@ -107,7 +107,7 @@ findEntry m = (l, c)
     l = fromMaybe (-1) (elemIndex jc ls)
     c = fromMaybe (-1) jc
 
--- 4 V1 primeira versao do metodo para validar a Mina 
+-- 4 Metodo para validar a Mina 
 validMine :: Mine -> Bool
 validMine (Mine 0 0 [])       = True 
 validMine (Mine _ _ [])       = False 
@@ -120,37 +120,13 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m whe
    validaProporcoes  xs a b = length xs == a && validaColuna xs b
    
    
-  validaEntrada:: Mine  -> Point -> Bool
-  validaEntrada (Mine l c (x:xs)) 
+  validaEntrada:: Mine -> Bool
+  validaEntrada m(l c (x:xs)) 
                 |l' == 1||l' ==l  = if c'\= -1 then True else False
                 |l' < l && l'> 1  = if  c' \= -1  && c' ==1||c' == length x  then True else False
                 |otherwise = False
-                where (l', c') = findEntry Mine
+                where (l', c') = findEntry m
 
---V2     segunda versão para validar a mina
-
-validMine1 :: Mine -> Bool
-validMine1 (Mine 0 0 [])       = True 
-validMine1 (Mine _ _ [])       = False 
-validMine1 (Mine a b (x:xs):t) = validaProporcoes (x:xs) a b && possuiEntradaNaBordaAuxiliar  0 0 a b ((x:xs):t)) where
-   validaColuna ::[[Element]] -> Int ->Bool
-   validaColuna (x:xs)_ =True
-   validaColuna (x:xs)b = (length x ==b) && validaColuna
-
-   validaProporcoes:: [[Element]] -> Int -> Int ->Bool
-   validaProporcoes  xs a b = length xs == a && validaColuna xs b
-   
-  possuiEntradaNaBordaAuxiliar :: Int->Int->Int->Int->[[Element]]->Bool
-  possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas [] = False
-  possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas ((hh1:th1):t) = 
-       if(i >= numeroDeLinhas)
-        then False
-       else if (j >= numeroDeColunas)
-        then possuiEntradaNaBordaAuxiliar (i+1) 0 numeroDeLinhas numeroDeColunas ((hh1:th1):t)
-       else if((ehEntradaEEstaNaBorda i j numeroDeLinhas numeroDeColunas (elementoDaPosicaoNaMatriz i j ((hh1:th1):t))) == True)
-        then True
-       else possuiEntradaNaBordaAuxiliar i (j+1) numeroDeLinhas numeroDeColunas ((hh1:th1):t)
-   
 
 -- %,%,%,%,%,%,%,%,%,%,%,%,%,%,%
 -- %,*,*,*,.,.,.,.,.,.,.,.,.,.,%
@@ -394,6 +370,7 @@ updateMine S = do
 exec :: Instr -> ConfM ()
 exec inst = updateMine inst 
 
+--14 Configuração inicial do robo
 initRobot :: Mine -> Robot
 initRobot m =
         Robot
@@ -422,8 +399,7 @@ runAuxiliar (hInstrucoes:tInstrucoes) ((Robot energy (pi,pj) collected),(Mine li
 runAuxiliar (hInstrucoes:tInstrucoes) ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) = 
     (runAuxiliar tInstrucoes (confFromExec  ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) hInstrucoes))
         
-        --tInstrucoes (executarInstrucao hInstrucoes (Mine linhas colunas ((hh:th):t)))
-        
+--15 Retorna a configuração final        
 run :: [Instr] -> Mine -> Mine
 run [] (Mine linhas colunas []) = (Mine linhas colunas [])
 run [] (Mine linhas colunas ((hh:th):t)) = (Mine linhas colunas ((hh:th):t))
@@ -431,14 +407,7 @@ run (hInstrucoes:tInstrucoes) (Mine linhas colunas []) = (Mine linhas colunas []
   run (hInstrucoes:tInstrucoes) (Mine linhas colunas ((hh:th):t)) =
     snd (runAuxiliar (hInstrucoes:tInstrucoes) ((initRobot (Mine linhas colunas ((hh:th):t))),(Mine linhas colunas ((hh:th):t))))
 
-initRobot :: Mine -> Robot
-initRobot m =
-  Robot
-    { energy = 100,
-      position = findEntry m,
-      collected = 0
-    }
-
+--16 Le arquivo .ldm
 readLDM :: String -> IO (Either String Mine)
 readLDM nomeDoArquivo = do
     s <- readFile (nomeDoArquivo) 
@@ -448,7 +417,7 @@ readLDM nomeDoArquivo = do
     then return (Right mina)
     else return (Left "Erro na Mina!!")
     
-
+--17 Le arquivo lcr
 readLCR :: String -> IO (Either String [Instr])
 readLCR nomeDoArquiv = do
     s <- readFile nomeDoArquivo
