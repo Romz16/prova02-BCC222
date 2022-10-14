@@ -5,8 +5,14 @@ module Robot ( readLDM
 
 import Control.Monad.State
 import Parsing 
-
-
+import Control.Monad
+import Data.List (elemIndex, intercalate)
+import Data.Maybe
+import Data.String
+import System.IO
+import Control.Monad
+import Control.Exception
+import Data.Traversable (for)
 
 type Fuel = Int
 type Point = (Int,Int)
@@ -17,16 +23,17 @@ data Robot = Robot {
                 position  :: Point,
                 collected :: Material
              } deriving (Eq, Ord)
-
+-- Seta valores para Robot
 sampleRobot :: Robot
 sampleRobot = Robot {
                  energy = 100,
                  position = (1,1),
                  collected = 0
               }
-
+--1 Apresenta  a definição de Robot
 instance Show Robot where
   show (Robot x (a,b) y) = concat ["Energy:", show x, "\nPosition:", show (a,b), "\nCollected:", show y]
+
 
 data Element = Empty         -- espaço vazio
              | Entry         -- entrada da mina
@@ -36,6 +43,7 @@ data Element = Empty         -- espaço vazio
              | Material Int  -- material, Int indica quantidade.
              deriving (Eq,Ord)
 
+--2 Apresenta a Definição de Element
 instance Show Element where
 
    show (x) 
@@ -50,7 +58,9 @@ instance Show Element where
             else if x == 150 then ";"           
             else "$"
 
+--3 Realiza Parser para o tipo Element
 pElement :: Parser Char Element
+--Possibilidades de simbolos que podem ser encontrados 
 pElement = f <$> (symbol ' ' <|> -- espaco vazio 
                   symbol 'E' <|> -- entrada
                   symbol '%' <|> -- parede
@@ -61,6 +71,7 @@ pElement = f <$> (symbol ' ' <|> -- espaco vazio
                   symbol ';' <|> -- 150
                   symbol '$'     -- quantidade
                  )
+            --O que cada simbolo representará 
             where
                 f res
                   | res == ' ' = Empty
@@ -82,10 +93,12 @@ data Mine = Mine {
               elements :: [Line]
             } deriving (Eq, Ord)
 
+--7 Apresenta a Mina
 instance Show Mine where
    -- ShowList (Mine a b xs) =(\y -> intercalate "" $ map show xs)
      show (Mine l c e) = unlines $ map (unwords . map show) e
 
+--Função auxilar para encontrar entrada 
 findEntry :: Mine -> Point
 findEntry m = (l, c)
   where
@@ -93,7 +106,8 @@ findEntry m = (l, c)
     jc = head $ filter (/= Nothing) ls
     l = fromMaybe (-1) (elemIndex jc ls)
     c = fromMaybe (-1) jc
---V1
+
+-- 4 V1 primeira versao do metodo para validar a Mina 
 validMine :: Mine -> Bool
 validMine (Mine 0 0 [])       = True 
 validMine (Mine _ _ [])       = False 
@@ -113,7 +127,7 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m whe
                 |otherwise = False
                 where (l', c') = findEntry Mine
 
---V2    
+--V2     segunda versão para validar a mina
 
 validMine1 :: Mine -> Bool
 validMine1 (Mine 0 0 [])       = True 
@@ -153,10 +167,11 @@ validMine1 (Mine a b (x:xs):t) = validaProporcoes (x:xs) a b && possuiEntradaNaB
 -- %,.,.,.,.,.,.,.,.,.,.,.,.,$,%
 -- %,.,.,.,.,.,.,.,.,., , , ,.,%
 -- %,%,%,%,%,%,%,%,%,%,%,%,%,L,%
-
+--5 representa uma mina 15X15
 exampleMine :: Mine
 exampleMine = (Mine 15 15 [[Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Rock,Earth,Earth,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Empty,Earth,Earth,Rock,Rock,Rock,Earth,Wall],[Wall,Earth,(Material 50),Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Rock,Earth,Earth,Wall],[Wall,Earth,Earth,Empty,Empty,Empty,Empty,Empty,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,(Material 100),Earth,Earth,Empty,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Empty,Earth,Empty,Empty,Empty,Empty,Empty,Empty,Empty,Earth,Earth,Wall],[Wall,Earth,Earth,Rock,Earth,Empty,Earth,Earth,Empty,Earth,Earth,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Empty,Earth,(Material 150),(Material 150),Earth,Earth,Wall],[Wall,Earth,Rock,Earth,Earth,Empty,Earth,Earth,Earth,(Material 150),(Material 150),Earth,Earth,Rock,Wall],[Wall,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,(Material 1),Wall],[Wall,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Empty,Empty,Empty,Earth,Wall],[Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Entry,Wall]])
 
+-- 6 Parser para desenvoler as linhas da matriz  e parser para gerar a mina
 pLine :: Parser Char Line
 pLine = greedy1 pElement
 
@@ -174,6 +189,7 @@ data Instr = L -- move para esquerda
            | S -- para para recarga.
            deriving (Eq,Ord,Show,Enum)
 
+--8 Parser para o tipo de instruções
 pInst :: Parser Char Instr
 pInst =     f <$> (symbol 'l' -- esquerda
                   <|>symbol 'L' -- esquerda
@@ -202,6 +218,7 @@ pInst =     f <$> (symbol 'l' -- esquerda
                   | res == "S" = S
                   | otherwise = error "Invalid Command"
 
+ --9 Parser par lista de instruçoes                  
 pProgram :: Parser Char [Instr]
 pProgram = greedy1 pInstr
 
@@ -209,6 +226,8 @@ type Conf = (Robot, Mine)
 
 type ConfM a = State Conf a
 
+--10 
+--10.1 devolve ponto
 current :: ConfM Point
 current 
   =do
@@ -219,19 +238,21 @@ current
     --getPoint:: Robot -> Point
     --getPoint r = position r
 
+--10.2 retorna configuração atual da mina
 mine :: ConfM Mine
 mine = gets $ snd
 
 getElement :: Mine -> Point -> Element
 getElement m (x, y) = elements m !! x !! y
 
-
+--10.3 retorna se robo tem energia suficiente 
 enoughEnergy :: Int -> ConfM Bool
 enoughEnergy n
   =do
   (r,m) <- get
    let r' = if energy r > n then True else False
 
+--10.4 adiciona 1 à energia do robo
 incEnergy :: ConfM ()
 incEnergy 
   =do
@@ -253,6 +274,7 @@ verificaMateriais m (x,y) = elements m !! (x+1) !! y == Material
                             || elements m !! x !! (y+1) == Material
                             || elements m !! x !! (y-1) == Material
 
+ --11 Valida intrução                           
 valid :: Instr -> ConfM Bool
 valid L
   = do
@@ -330,6 +352,7 @@ updatePosition p = modify (\(r, m) -> (r {position = p, energy = energy r - 1}, 
 updateElem :: Point -> CongM()
 updateEleme (x,y) = modify(\(r,m)->(r,m{l,c elemnts !!x !!y = Empyt }))
 
+--12 Atualiza Mina com base nas instruções 
 updateMine :: Instr -> ConfM ()
 updateMine L = do
   inst <- valid L
@@ -363,7 +386,8 @@ updateMine C = do
         else return ()
 updateMine S = do
       incEnergy
-        
+ 
+--13 Executa uma função caso seja valido
 exec :: Instr -> ConfM ()
 exec inst = updateMine inst 
 
