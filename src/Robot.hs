@@ -268,11 +268,10 @@ verificaParede m (x,y) = if elements m !! x !! y == Wall
                         then False
                         else True
 
-verificaColeta :: Mine -> Point -> Bool
-verificaMateriais m (x,y) = elements m !! (x+1) !! y == Material
-                            || elements m !! (x-1) !! y == Material
-                            || elements m !! x !! (y+1) == Material
-                            || elements m !! x !! (y-1) == Material
+temMinerio :: Mine -> Point -> Bool
+temMinerio m (x, y) 
+          |  elements m !! x !! y == Material = True
+          |  otherwise = False
 
  --11 Valida intrução                           
 valid :: Instr -> ConfM Bool
@@ -336,7 +335,11 @@ valid C
   energy <- enoughEnergy 10
   (x, y) <- current
   mina <- getMine
-  return energy && verificaMateriais
+  return energy && verificaMateriais m (x,y)
+  where
+    verificaMateriais :: Mine -> Point -> Bool
+    verificaMateriais m (x, y) = temMinerio m (x-1,y) || temMinerio m (x+1,y) || temMinerio m (x,y-1) || temMinerio m (x,y+1)
+
 
 valid S = return True 
 
