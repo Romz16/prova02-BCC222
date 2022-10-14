@@ -93,7 +93,7 @@ findEntry m = (l, c)
     jc = head $ filter (/= Nothing) ls
     l = fromMaybe (-1) (elemIndex jc ls)
     c = fromMaybe (-1) jc
-
+--V1
 validMine :: Mine -> Bool
 validMine (Mine 0 0 [])       = True 
 validMine (Mine _ _ [])       = False 
@@ -112,15 +112,31 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m whe
                 |l' < l && l'> 1  = if  c' \= -1  && c' ==1||c' == length x  then True else False
                 |otherwise = False
                 where (l', c') = findEntry Mine
-                
-    --            | if findEntry m ==(l,-1) then False else  if c
 
-  -- validaEntrada :: (Eq a, Num a) => [[Element]] -> a -> Int -> a-> Bool
-   --validaEntrada [] _ _ _ = False
-  --validaEntrada (x : xs) l c count 
-   --                   | count == 0     = if elem Entry x then True else procuraEntrada xs l c (count+1)  
-     --                 | count == (l-1) = if elem Entry x then True else False  
-       --               | otherwise      = (fromMaybe (-1) $ elemIndex Entry x) == 0 || (fromMaybe (-1) $ elemIndex Entry x) == (c-1) || procuraEntrada xs l c (count+1) 
+--V2    
+
+validMine :: Mine -> Bool
+validMine (Mine 0 0 [])       = True 
+validMine (Mine _ _ [])       = False 
+validMine (Mine a b (x:xs):t) = validaProporcoes (x:xs) a b && possuiEntradaNaBordaAuxiliar  0 0 a b ((x:xs):t)) where
+   validaColuna ::[[Element]] -> Int ->Bool
+   validaColuna (x:xs)_ =True
+   validaColuna (x:xs)b = (length x ==b) && validaColuna
+
+   validaProporcoes:: [[Element]] -> Int -> Int ->Bool
+   validaProporcoes  xs a b = length xs == a && validaColuna xs b
+   
+  possuiEntradaNaBordaAuxiliar :: Int->Int->Int->Int->[[Element]]->Bool
+  possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas [] = False
+  possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas ((hh1:th1):t) = 
+       if(i >= numeroDeLinhas)
+        then False
+       else if (j >= numeroDeColunas)
+        then possuiEntradaNaBordaAuxiliar (i+1) 0 numeroDeLinhas numeroDeColunas ((hh1:th1):t)
+       else if((ehEntradaEEstaNaBorda i j numeroDeLinhas numeroDeColunas (elementoDaPosicaoNaMatriz i j ((hh1:th1):t))) == True)
+        then True
+       else possuiEntradaNaBordaAuxiliar i (j+1) numeroDeLinhas numeroDeColunas ((hh1:th1):t)
+   
 
 linha1 :: Line
 linha1 = [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall]
@@ -165,7 +181,7 @@ pLine :: Parser Char Line
 pLine = f <$> pElement
       where
         f c = [head c]
---pLine = listOf pElement (symbol ’ ’)
+
 
 pMine :: Parser Char Mine
 pMine = transformaEmMina l <$> listOf pLine (symbol '\n') 
@@ -335,49 +351,30 @@ achaMinerio m (x, y) = if elements m !! x+1 !! y == Material || Rock || Earth th
                        else if elements m !! x !! y+1 == Material || Rock || Earth then (x,y+1)
 
 updateMine :: Instr -> ConfM ()
--- updateMine L
---   = do
---     teste <- valid L
---     (x,y) <- current
---     (r, m) <- get
---     if teste == True
---       then modify (\(r, m) -> (r {position = (x-1,y), energy = energy r - 1}, m))
---       else return ()
--- updateMine R
---   = do
---     teste <- valid R
---     (x,y) <- current
---     (r, m) <- get
---     if teste == True
---       then modify (\(r, m) -> (r {position = (x+1,y), energy = energy r - 1}, m))
---       else return ()
--- updateMine U
---   = do
---     teste <- valid U
---     (x,y) <- current
---     (r, m) <- get
---     if teste == True
---       then modify (\(r, m) -> (r {position = (x,y-1), energy = energy r - 1}, m))
---       else return ()
--- updateMine D
---   = do
---     teste <- valid D
---     (x,y) <- current
---     (r, m) <- get
---     if teste == True
---       then modify (\(r, m) -> (r {position = (x,y+1), energy = energy r - 1}, m))
---       else return ()
-updateMine C
-  = do
-    (x, y) <- current
-    teste <- valid C
-    (r,m) <- get
-    (x, y) <- achaMinerio m (x,y)
-    if teste == True then modify (\(r,m) -> (r, m{elements m !! x !! y = Empty}))
+updateMine L = do
+  inst <- valid L
+  (x, y) <- current
+  if inst
+    then updatePosition (x -1, y)
     else return ()
-        
-
-
+updateMine R = do
+  inst <- valid L
+  (x, y) <- current
+  if inst
+    then updatePosition (x +1, y)
+    else return ()
+updateMine U = do
+  inst <- valid U
+  (x, y) <- current
+  if inst
+    then updatePosition (x, y+1)
+    else return ()
+updateMine D = do
+  inst <- valid D
+  (x, y) <- current
+  if inst
+    then updatePosition (x , y-1)
+    else return ()
 
 exec :: Instr -> ConfM ()
 exec = undefined
