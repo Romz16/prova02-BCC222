@@ -402,18 +402,24 @@ initRobot m =
     }
 
 readLDM :: String -> IO (Either String Mine)
-readLDM name = do
-           arq <- openFile name
-           conteudo <- hGetContents arq
-           pMine conteudo
-          if validMine conteudo then return conteudo
-          else putStrLn "Erro na Mina!!"
+readLDM nomeDoArquivo = do
+    s <- readFile (nomeDoArquivoSemExtensao) 
+    pMine s
+    if validMine s
+    then return (fst (head (runParser s)))
+    else putStrLn "Erro na Mina!!"
 
+removerTodasAsOcorrencias :: Eq a => a->[a]->[a]
+removerTodasAsOcorrencias elemento [] = []
+removerTodasAsOcorrencias elemento (h:t) = 
+  if(elemento == h)
+    then removerTodasAsOcorrencias elemento t
+    else h:(removerTodasAsOcorrencias elemento t)
+    
 
 readLCR :: String -> IO (Either String [Instr])
-readLDM name = do
-           arq <- openFile name
-           conteudo <- hGetContents arq
-           pProgram conteudo
-          if valid conteudo then return conteudo
-          else putStrLn "Erro na Mina!!"
+readLCR nomeDoArquiv = do
+    s <- readFile (nomeDoArquivo) 
+    pProgram s  
+    if valid s 
+    then return (fst (head (runParser  (removerTodasAsOcorrencias '\n' s))))
