@@ -9,10 +9,12 @@ import Control.Monad
 import Data.List (elemIndex, intercalate)
 import Data.Maybe
 import Data.String
+import Data.List
 import System.IO
 import Control.Monad
 import Control.Exception
 import Data.Traversable (for)
+
 
 type Fuel = Int
 type Point = (Int,Int)
@@ -23,6 +25,7 @@ data Robot = Robot {
                 position  :: Point,
                 collected :: Material
              } deriving (Eq, Ord)
+
 -- Seta valores para Robot
 sampleRobot :: Robot
 sampleRobot = Robot {
@@ -30,11 +33,12 @@ sampleRobot = Robot {
                  position = (1,1),
                  collected = 0
               }
+
 --1 Apresenta  a definição de Robot
 instance Show Robot where
   show (Robot x (a,b) y) = concat ["Energy:", show x, "\nPosition:", show (a,b), "\nCollected:", show y]
 
-
+--2 Apresenta a Definição de Element
 data Element = Empty         -- espaço vazio
              | Entry         -- entrada da mina
              | Wall          -- parede
@@ -43,22 +47,21 @@ data Element = Empty         -- espaço vazio
              | Material Int  -- material, Int indica quantidade.
              deriving (Eq,Ord)
 
---2 Apresenta a Definição de Element
 instance Show Element where
 
    show (x) 
-            |(x==Empty) = show " " -- espaco vazio 
-            |(x==Entry) = show "E" -- entrada
-            |(x==Wall) = show "%"  -- parede
-            |(x==Earth) = show "." -- terra
-            |(x==Rock) = show "*"  -- rocha
-            |(x==Material) =       -- Material
-            if x == 50 then "?"           
-            else if x == 100 then ":"           
-            else if x == 150 then ";"           
-            else "$"
+            |(x == Empty) = show " " -- espaco vazio 
+            |(x == Entry) = show "E" -- entrada
+            |(x == Wall) = show "%"  -- parede
+            |(x == Earth) = show "." -- terra
+            |( x== Rock) = show "*"  -- rocha
+            |(x == Material 50) = "?" -- Material       
+            |(x == Material 100) = ":" -- Material         
+            |(x == Material 150) = ";" -- Material     
+            |(x == Material 1) = "$" -- Material
 
 --3 Realiza Parser para o tipo Element
+
 pElement :: Parser Char Element
 --Possibilidades de simbolos que podem ser encontrados 
 pElement = f <$> (symbol ' ' <|> -- espaco vazio 
@@ -98,7 +101,7 @@ instance Show Mine where
    -- ShowList (Mine a b xs) =(\y -> intercalate "" $ map show xs)
      show (Mine l c e) = unlines $ map (unwords . map show) e
 
---Função auxilar para encontrar entrada 
+--Função auxilar para encontrar entrada
 findEntry :: Mine -> Point
 findEntry m = (l, c)
   where
@@ -108,26 +111,77 @@ findEntry m = (l, c)
     c = fromMaybe (-1) jc
 
 -- 4 Metodo para validar a Mina 
-validMine :: Mine -> Bool
-validMine (Mine 0 0 [])       = True 
-validMine (Mine _ _ [])       = False 
-validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m where
-   validaColuna ::[[Element]] -> Int ->Bool
-   validaColuna (x:xs)_ =True
-   validaColuna (x:xs)b = (length x ==b) && validaColuna
+temZeroLinhas :: Int->Bool
+temZeroLinhas linhas = 
+    if(linhas == 0)
+        then True
+    else False
 
-   validaProporcoes:: [[Element]] -> Int -> Int ->Bool
-   validaProporcoes  xs a b = length xs == a && validaColuna xs b
-   
-   
-  validaEntrada:: Mine -> Bool
-  validaEntrada m(l c (x:xs)) 
-                |l' == 1||l' ==l  = if c'\= -1 then True else False
-                |l' < l && l'> 1  = if  c' \= -1  && c' ==1||c' == length x  then True else False
-                |otherwise = False
-                where (l', c') = findEntry m
+temZeroLinhasEZeroColunas :: Int->Int->Bool
+temZeroLinhasEZeroColunas linhas colunas = 
+    if((temZeroLinhas linhas)&&(colunas == 0))
+        then True
+    else False
 
+temZeroLinhasOuZeroColunas :: Int->Int->Bool
+temZeroLinhasOuZeroColunas linhas colunas = 
+    if((temZeroLinhas linhas)||(colunas == 0))
+        then True
+    else False
 
+matrizEstaDeAcordoComAsDimensoesAuxiliar :: Int->Int->[[a]]->Bool
+matrizEstaDeAcordoComAsDimensoesAuxiliar linhas colunas [] = linhas == 0
+matrizEstaDeAcordoComAsDimensoesAuxiliar linhas colunas ((hh1:th1):t) =
+    if((length (hh1:th1)) /= colunas)
+        then False
+    else matrizEstaDeAcordoComAsDimensoesAuxiliar (linhas - 1) colunas t
+
+matrizEstaDeAcordoComAsDimensoes :: Int->Int->[[a]]->Bool
+matrizEstaDeAcordoComAsDimensoes linhas colunas [] = temZeroLinhasEZeroColunas linhas colunas
+matrizEstaDeAcordoComAsDimensoes linhas colunas ((hh1:th1):t) =
+    matrizEstaDeAcordoComAsDimensoesAuxiliar linhas colunas ((hh1:th1):t)
+
+estamosNaBorda :: Int->Int->Int->Int->Bool
+estamosNaBorda i j numeroDeLinhas numeroDeColunas =
+    if((i == 0) || (j == 0) || (i == (numeroDeLinhas-1)) || (j == (numeroDeColunas-1)))
+        then True
+    else False
+
+ehEntradaEEstaNaBorda :: Int->Int->Int->Int->Element->Bool
+ehEntradaEEstaNaBorda i j numeroDeLinhas numeroDeColunas elemento = 
+    if((estamosNaBorda i j numeroDeLinhas numeroDeColunas) == False)
+        then False
+    else if((show elemento) /= (show Entry))
+        then False
+    else True
+
+elementoDaPosicaoNaMatriz :: Int->Int->[[a]]->a
+elementoDaPosicaoNaMatriz i j ((hh1:th1):t) = 
+    if(i == 0)
+        then (hh1:th1) !! j
+    else elementoDaPosicaoNaMatriz (i-1) j t
+
+possuiEntradaNaBordaAuxiliar :: Int->Int->Int->Int->[[Element]]->Bool
+possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas [] = False
+possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas ((hh1:th1):t) = 
+    if(i >= numeroDeLinhas)
+        then False
+    else if (j >= numeroDeColunas)
+        then possuiEntradaNaBordaAuxiliar (i+1) 0 numeroDeLinhas numeroDeColunas ((hh1:th1):t)
+    else if((ehEntradaEEstaNaBorda i j numeroDeLinhas numeroDeColunas (elementoDaPosicaoNaMatriz i j ((hh1:th1):t))) == True)
+        then True
+    else possuiEntradaNaBordaAuxiliar i (j+1) numeroDeLinhas numeroDeColunas ((hh1:th1):t)
+
+validMine :: Mine->Bool
+validMine (Mine linhas colunas []) = False
+validMine (Mine linhas colunas ((hh1:th1):t)) = 
+    if(temZeroLinhasOuZeroColunas linhas colunas)
+        then False
+    else if((matrizEstaDeAcordoComAsDimensoes linhas colunas ((hh1:th1):t)) == False)
+        then False
+    else if((possuiEntradaNaBordaAuxiliar 0 0 linhas colunas ((hh1:th1):t)) == False)
+        then False
+    else True
 -- %,%,%,%,%,%,%,%,%,%,%,%,%,%,%
 -- %,*,*,*,.,.,.,.,.,.,.,.,.,.,%
 -- %,*,*,*,.,.,., ,.,.,.,*,.,.,%
@@ -143,7 +197,7 @@ validMine (Mine a b (x:xs)) = validaProporcoes (x:xs) a b && validaEntrada m whe
 -- %,.,.,.,.,.,.,.,.,.,.,.,.,$,%
 -- %,.,.,.,.,.,.,.,.,., , , ,.,%
 -- %,%,%,%,%,%,%,%,%,%,%,%,%,L,%
---5 representa uma mina 15X15
+
 exampleMine :: Mine
 exampleMine = (Mine 15 15 [[Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Rock,Earth,Earth,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Empty,Earth,Earth,Rock,Rock,Rock,Earth,Wall],[Wall,Earth,(Material 50),Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Rock,Earth,Earth,Wall],[Wall,Earth,Earth,Empty,Empty,Empty,Empty,Empty,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,(Material 100),Earth,Earth,Empty,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Empty,Earth,Empty,Empty,Empty,Empty,Empty,Empty,Empty,Earth,Earth,Wall],[Wall,Earth,Earth,Rock,Earth,Empty,Earth,Earth,Empty,Earth,Earth,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Empty,Earth,(Material 150),(Material 150),Earth,Earth,Wall],[Wall,Earth,Rock,Earth,Earth,Empty,Earth,Earth,Earth,(Material 150),(Material 150),Earth,Earth,Rock,Wall],[Wall,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,(Material 1),Wall],[Wall,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Empty,Empty,Empty,Earth,Wall],[Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Entry,Wall]])
 
@@ -191,12 +245,12 @@ pInst =     f <$> (symbol 'l' -- esquerda
                   | res == 'D' = D
                   | res == 'C' = C
                   | res == 's' = S
-                  | res == "S" = S
+                  | res == 'S' = S
                   | otherwise = error "Invalid Command"
 
- --9 Parser par lista de instruçoes                  
+ --9 Parser par lista de instruçoes 
 pProgram :: Parser Char [Instr]
-pProgram = greedy1 pInstr
+pProgram = greedy1 pInst
 
 type Conf = (Robot, Mine)
 
@@ -205,14 +259,7 @@ type ConfM a = State Conf a
 --10 
 --10.1 devolve ponto
 current :: ConfM Point
-current 
-  =do
-    (r,m) <- get
-    return getPoint r
-  let r' =position r : r
-  put (r',m)
-    --getPoint:: Robot -> Point
-    --getPoint r = position r
+current = gets $ position . fst
 
 --10.2 retorna configuração atual da mina
 mine :: ConfM Mine
@@ -221,23 +268,19 @@ mine = gets $ snd
 getElement :: Mine -> Point -> Element
 getElement m (x, y) = elements m !! x !! y
 
---10.3 retorna se robo tem energia suficiente 
+--10.3 retorna se robo tem energia suficiente
 enoughEnergy :: Int -> ConfM Bool
 enoughEnergy n
   =do
   (r,m) <- get
-   let r' = if energy r > n then True else False
+  if energy r > n then return True else return False
 
 --10.4 adiciona 1 à energia do robo
 incEnergy :: ConfM ()
 incEnergy 
   =do
     (r,m) <- get
-    let  r' = getEnergyPlus r
-    put (r',m)
-    where 
-      getEnergyPlus:: Robot->Fuel
-      getEnergyPlus r = energy+1 r 
+    modify (\(r, m) -> (r {energy = energy r + 1}, m))
 
 verificaParede :: Mine -> Point -> Bool
 verificaParede m (x,y) = if elements m !! x !! y == Wall
@@ -245,93 +288,99 @@ verificaParede m (x,y) = if elements m !! x !! y == Wall
                         else True
 
 temMinerio :: Mine -> Point -> Bool
-temMinerio m (x, y) 
-          |  elements m !! x !! y == Material = True
-          |  otherwise = False
+temMinerio m (x, y) = elements m !! x !! y == Material 50 
+                      || elements m !! x !! y == Material 100
+                      || elements m !! x !! y == Material 150
+                      || elements m !! x !! y == Material 1
 
- --11 Valida intrução                           
+ --11 Valida intrução 
 valid :: Instr -> ConfM Bool
 valid L
   = do
     (x, y) <- current
-    mina <- getMine 
-    element <- getElement mina (x-1,y)
+    mina <- mine 
+    element <- getElement mina (x-1, y)
     energy <- enoughEnergy energiaNecessaria element
+    return energy && verificaParede mina (x-1, y)
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-          return energy && verificaParede mina (x-1, y)
 
 valid R
   = do
     (x, y) <- current
-    mina <- getMine 
+    mina <- mine 
     element <- getElement mina (x+1,y)
     energy <- enoughEnergy energiaNecessaria element
+    return energy && verificaParede mina (x+1, y)
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-          return energy && verificaParede mina (x+1, y) 
 
 valid U
   = do
     (x, y) <- current
-    mina <- getMine 
+    mina <- mine 
     element <- getElement mina (x,y-1)
     energy <- enoughEnergy energiaNecessaria element
+    return energy && verificaParede mina (x, y-1) 
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-          return energy && verificaParede mina (x, y-1) 
 
 valid D
- (x, y) <- current
-    mina <- getMine 
+  = do
+    (x, y) <- current
+    mina <- mine 
     element <- getElement mina (x,y+1)
     energy <- enoughEnergy energiaNecessaria element
+    return energy && verificaParede mina (x, y+1)
       where
         energiaNecessaria :: Element -> Int
         energiaNecessaria x = 
           if(x == Rock) then 30
           else if(x == Earth) then 5
           else 1
-          return energy && verificaParede mina (x, y+1)
 
 valid C
  = do
   energy <- enoughEnergy 10
   (x, y) <- current
-  mina <- getMine
-  return energy && verificaMateriais m (x,y)
+  mina <- mine
+  return energy && verificaMateriais mina (x,y)
   where
     verificaMateriais :: Mine -> Point -> Bool
     verificaMateriais m (x, y) = temMinerio m (x-1,y) || temMinerio m (x+1,y) || temMinerio m (x,y-1) || temMinerio m (x,y+1)
 
 
-valid S = return True 
+valid S = return True
 
-achaMinerio :: Mine -> Point -> Point
-achaMinerio m (x, y) = if elements m !! x+1 !! y == Material || Rock || Earth then (x+1,y)
-                       else if elements m !! x-1 !! y == Material || Rock || Earth then (x-1,y)
-                       else if elements m !! x !! y-1 == Material || Rock || Earth then (x,y-1)
-                       else if elements m !! x !! y+1 == Material || Rock || Earth then (x,y+1)
-
+--12 Atualiza Mina com base nas instruções 
 updatePosition :: Point -> ConfM ()
 updatePosition p = modify (\(r, m) -> (r {position = p, energy = energy r - 1}, m))
 
-updateElem :: Point -> CongM()
-updateEleme (x,y) = modify(\(r,m)->(r,m{l,c elemnts !!x !!y = Empyt }))
+setEmpty :: Mine -> Point -> [Line]
+setEmpty (Mine l c xs) (x, y) = (replace xs (x, (replace (xs !! x) (y, Empty))))
 
---12 Atualiza Mina com base nas instruções 
+replace :: [a] -> (Int, a) -> [a]
+replace xs (i, e) = before ++ [e] ++ after
+  where
+    (before, _:after) = splitAt i xs
+
+
+updateElem :: Point -> ConfM()
+updateElem (x,y) = modify(\(r,m)->(r,m{elements = setEmpty m (x,y)}))
+
+
 updateMine :: Instr -> ConfM ()
 updateMine L = do
   inst <- valid L
@@ -365,11 +414,10 @@ updateMine C = do
         else return ()
 updateMine S = do
       incEnergy
- 
+        
 --13 Executa uma função caso seja valido
 exec :: Instr -> ConfM ()
 exec inst = updateMine inst 
-
 --14 Configuração inicial do robo
 initRobot :: Mine -> Robot
 initRobot m =
@@ -399,30 +447,33 @@ runAuxiliar (hInstrucoes:tInstrucoes) ((Robot energy (pi,pj) collected),(Mine li
 runAuxiliar (hInstrucoes:tInstrucoes) ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) = 
     (runAuxiliar tInstrucoes (confFromExec  ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) hInstrucoes))
         
---15 Retorna a configuração final        
+        --tInstrucoes (executarInstrucao hInstrucoes (Mine linhas colunas ((hh:th):t)))
+        
+--15 Retorna a configuração final 
 run :: [Instr] -> Mine -> Mine
 run [] (Mine linhas colunas []) = (Mine linhas colunas [])
 run [] (Mine linhas colunas ((hh:th):t)) = (Mine linhas colunas ((hh:th):t))
 run (hInstrucoes:tInstrucoes) (Mine linhas colunas []) = (Mine linhas colunas [])
-  run (hInstrucoes:tInstrucoes) (Mine linhas colunas ((hh:th):t)) =
-    snd (runAuxiliar (hInstrucoes:tInstrucoes) ((initRobot (Mine linhas colunas ((hh:th):t))),(Mine linhas colunas ((hh:th):t))))
+run (hInstrucoes:tInstrucoes) (Mine linhas colunas ((hh:th):t)) =
+  snd (runAuxiliar (hInstrucoes:tInstrucoes) ((initRobot (Mine linhas colunas ((hh:th):t))),(Mine linhas colunas ((hh:th):t))))
+
 
 --16 Le arquivo .ldm
 readLDM :: String -> IO (Either String Mine)
 readLDM nomeDoArquivo = do
     s <- readFile (nomeDoArquivo) 
-    let res = runParser (pMine)s
-    let mina = fst $ head 
+    let res = runParser (pMine) s
+    mina <- fst $ head 
     if validMine mina
     then return (Right mina)
     else return (Left "Erro na Mina!!")
     
 --17 Le arquivo lcr
 readLCR :: String -> IO (Either String [Instr])
-readLCR nomeDoArquiv = do
+readLCR nomeDoArquivo = do
     s <- readFile nomeDoArquivo
     let res = runParser(pProgram)s  
     let result = fst $ head res
-    if prog /=[] && valid result
+    if result /= [] && valid result
     then return (Right result)
     else return (Left "Erro ao ler arquivo")
