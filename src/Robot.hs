@@ -314,7 +314,11 @@ valid C
   energy <- enoughEnergy 10
   (x, y) <- current
   mina <- getMine
-  return energy && verificaMateriais
+  return energy && verificaMateriais m (x,y)
+  where
+    verificaMateriais :: Mine -> Point -> Bool
+    verificaMateriais m (x, y) = temMinerio m (x-1,y) || temMinerio m (x+1,y) || temMinerio m (x,y-1) || temMinerio m (x,y+1)
+
 
 valid S = return True 
 
