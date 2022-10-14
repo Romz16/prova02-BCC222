@@ -138,61 +138,33 @@ validMine1 (Mine a b (x:xs):t) = validaProporcoes (x:xs) a b && possuiEntradaNaB
        else possuiEntradaNaBordaAuxiliar i (j+1) numeroDeLinhas numeroDeColunas ((hh1:th1):t)
    
 
-linha1 :: Line
-linha1 = [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall]
-linha2 :: Line
-linha2 = [Wall, Rock, Rock, Rock, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Wall]
-linha3 :: Line
-linha3 = [Wall, Rock, Rock, Rock, Earth, Earth, Earth, Empty, Earth, Earth, Earth, Rock, Earth, Earth, Wall]
-linha4 :: Line
-linha4 = [Wall, Rock, Rock, Rock, Earth, Earth, Earth, Empty, Earth, Earth, Rock, Rock, Rock, Earth, Wall]
-linha5 :: Line
-linha5 = [Wall, Earth, (Material 50), Earth, Earth, Earth, Earth, Empty, Earth, Earth, Earth, Rock, Earth, Earth, Wall]
-linha6 :: Line
-linha6 = [Wall, Earth, Earth, Empty, Empty, Empty, Empty, Empty, Earth, Earth, Empty, Earth, Earth, Earth, Wall]
-linha7 :: Line
-linha7 = [Wall, Earth, Earth, Earth, Earth, Empty, Earth, Earth, Earth, Earth, Empty, Earth, Earth, Earth, Wall]
-linha8 :: Line
-linha8 = [Wall, Earth, (Material 100), Earth, Earth, Empty, Earth, Earth, Earth, Earth, Empty, Earth, Earth, Earth, Wall]
-linha9 :: Line
-linha9 = [Wall, Earth, Earth, Empty, Earth, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Earth, Earth, Wall]
-linha10 :: Line
-linha10 = [Wall, Earth, Earth, Rock, Earth, Empty, Earth, Earth, Empty, Earth, Earth, Earth, Earth, Earth, Wall]
-linha11 :: Line
-linha11 = [Wall, Earth, Earth, Earth, Earth, Empty, Earth, Earth, Empty, Earth, (Material 150), (Material 150), Earth, Earth, Wall]
-linha12 :: Line
-linha12 = [Wall, Earth, Rock, Earth, Earth, Empty, Earth, Earth, Earth, (Material 150), (Material 150), Earth, Earth, Rock, Wall]
-linha13 :: Line
-linha13 = [Wall, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, (Material 1), Wall]
-linha14 :: Line
-linha14 = [Wall, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Earth, Empty, Earth, Empty, Empty, Wall]
-linha15 :: Line
-linha15 = [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Entry, Wall]
+-- %,%,%,%,%,%,%,%,%,%,%,%,%,%,%
+-- %,*,*,*,.,.,.,.,.,.,.,.,.,.,%
+-- %,*,*,*,.,.,., ,.,.,.,*,.,.,%
+-- %,*,*,*,.,.,., ,.,.,*,*,*,.,%
+-- %,.,?,.,.,.,., ,.,.,.,*,.,.,%
+-- %,.,., , , , , ,.,., ,.,.,.,%
+-- %,.,.,.,., ,.,.,.,., ,.,.,.,%
+-- %,.,:,.,., ,.,.,.,., ,.,.,.,%
+-- %,.,., ,., , , , , , , ,.,.,%
+-- %,.,.,*,., ,.,., ,.,.,.,.,.,%
+-- %,.,.,.,., ,.,., ,.,;,;,.,.,%
+-- %,.,*,.,., ,.,.,.,;,;,.,.,*,%
+-- %,.,.,.,.,.,.,.,.,.,.,.,.,$,%
+-- %,.,.,.,.,.,.,.,.,., , , ,.,%
+-- %,%,%,%,%,%,%,%,%,%,%,%,%,L,%
 
 exampleMine :: Mine
-exampleMine =
-  Mine
-    { Robot.lines = 15,
-      Robot.columns = 15,
-      Robot.elements = [linha1, linha2, linha3, linha4, linha5, linha6, linha7, linha8, linha9, linha10, linha11, linha12, linha13, linha14, linha15]
-    }
+exampleMine = (Mine 15 15 [[Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Rock,Earth,Earth,Wall],[Wall,Rock,Rock,Rock,Earth,Earth,Earth,Empty,Earth,Earth,Rock,Rock,Rock,Earth,Wall],[Wall,Earth,(Material 50),Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Rock,Earth,Earth,Wall],[Wall,Earth,Earth,Empty,Empty,Empty,Empty,Empty,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,(Material 100),Earth,Earth,Empty,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Empty,Earth,Empty,Empty,Empty,Empty,Empty,Empty,Empty,Earth,Earth,Wall],[Wall,Earth,Earth,Rock,Earth,Empty,Earth,Earth,Empty,Earth,Earth,Earth,Earth,Earth,Wall],[Wall,Earth,Earth,Earth,Earth,Empty,Earth,Earth,Empty,Earth,(Material 150),(Material 150),Earth,Earth,Wall],[Wall,Earth,Rock,Earth,Earth,Empty,Earth,Earth,Earth,(Material 150),(Material 150),Earth,Earth,Rock,Wall],[Wall,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,(Material 1),Wall],[Wall,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Earth,Empty,Empty,Empty,Earth,Wall],[Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Wall,Entry,Wall]])
 
 pLine :: Parser Char Line
-pLine = f <$> pElement
-      where
-        f c = [head c]
-
+pLine = greedy1 pElement
 
 pMine :: Parser Char Mine
-pMine = transformaEmMina l <$> listOf pLine (symbol '\n') 
-  where
-  transformaEmMina::[Element]->Mine
-  trasnformaEmMina l =  Mine
-              { Robot.lines = length l,
-                Robot.columns = length (head l),
-                Robot.elements = l
-              }
-
+pMine = f<$> listOf pLine eol
+          where
+            eol = symbol '\n'
+            f res = Mine (length res) (length (head res)) res
 
 data Instr = L -- move para esquerda
            | R -- move para direita
@@ -389,9 +361,48 @@ updateMine C = do
       if inst
         then updateElem (x , y)
         else return ()
-
+updateMine S = do
+      incEnergy
+        
 exec :: Instr -> ConfM ()
-exec = undefined
+exec inst = updateMine inst 
+
+initRobot :: Mine -> Robot
+initRobot m =
+        Robot
+          { energy = 100,
+            position = findEntry m,
+            collected = 0
+          }
+
+confFromExec :: Conf->Instr->Conf
+confFromExec ((Robot energy (pi,pj) collected),(Mine linhas colunas [])) instrucao = 
+    ((Robot energy (pi,pj) collected),(Mine linhas colunas []))
+        
+confFromExec ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) instrucao = 
+    snd (runState (exec instrucao) ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))))
+        
+runAuxiliar :: [Instr] -> Conf -> Conf
+runAuxiliar [] ((Robot energy (pi,pj) collected),(Mine linhas colunas [])) = 
+    ((Robot energy (pi,pj) collected),(Mine linhas colunas []))
+        
+runAuxiliar [] ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) = 
+    ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t)))
+        
+runAuxiliar (hInstrucoes:tInstrucoes) ((Robot energy (pi,pj) collected),(Mine linhas colunas [])) = 
+    ((Robot energy (pi,pj) collected),(Mine linhas colunas []))
+        
+runAuxiliar (hInstrucoes:tInstrucoes) ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) = 
+    (runAuxiliar tInstrucoes (confFromExec  ((Robot energy (pi,pj) collected),(Mine linhas colunas ((hh:th):t))) hInstrucoes))
+        
+        --tInstrucoes (executarInstrucao hInstrucoes (Mine linhas colunas ((hh:th):t)))
+        
+run :: [Instr] -> Mine -> Mine
+run [] (Mine linhas colunas []) = (Mine linhas colunas [])
+run [] (Mine linhas colunas ((hh:th):t)) = (Mine linhas colunas ((hh:th):t))
+run (hInstrucoes:tInstrucoes) (Mine linhas colunas []) = (Mine linhas colunas [])
+  run (hInstrucoes:tInstrucoes) (Mine linhas colunas ((hh:th):t)) =
+    snd (runAuxiliar (hInstrucoes:tInstrucoes) ((initRobot (Mine linhas colunas ((hh:th):t))),(Mine linhas colunas ((hh:th):t))))
 
 initRobot :: Mine -> Robot
 initRobot m =
@@ -403,23 +414,19 @@ initRobot m =
 
 readLDM :: String -> IO (Either String Mine)
 readLDM nomeDoArquivo = do
-    s <- readFile (nomeDoArquivoSemExtensao) 
-    pMine s
-    if validMine s
-    then return (fst (head (runParser s)))
-    else putStrLn "Erro na Mina!!"
-
-removerTodasAsOcorrencias :: Eq a => a->[a]->[a]
-removerTodasAsOcorrencias elemento [] = []
-removerTodasAsOcorrencias elemento (h:t) = 
-  if(elemento == h)
-    then removerTodasAsOcorrencias elemento t
-    else h:(removerTodasAsOcorrencias elemento t)
+    s <- readFile (nomeDoArquivo) 
+    let res = runParser (pMine)s
+    let mina = fst $ head 
+    if validMine mina
+    then return (Right mina)
+    else return (Left "Erro na Mina!!")
     
 
 readLCR :: String -> IO (Either String [Instr])
 readLCR nomeDoArquiv = do
-    s <- readFile (nomeDoArquivo) 
-    pProgram s  
-    if valid s 
-    then return (fst (head (runParser  (removerTodasAsOcorrencias '\n' s))))
+    s <- readFile nomeDoArquivo
+    let res = runParser(pProgram)s  
+    let result = fst $ head res
+    if prog /=[] && valid result
+    then return (Right result)
+    else return (Left "Erro ao ler arquivo")
