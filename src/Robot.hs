@@ -111,77 +111,35 @@ findEntry m = (l, c)
     c = fromMaybe (-1) jc
 
 -- 4 Metodo para validar a Mina 
-temZeroLinhas :: Int->Bool
-temZeroLinhas linhas = 
-    if(linhas == 0)
-        then True
-    else False
-
-temZeroLinhasEZeroColunas :: Int->Int->Bool
-temZeroLinhasEZeroColunas linhas colunas = 
-    if((temZeroLinhas linhas)&&(colunas == 0))
-        then True
-    else False
-
-temZeroLinhasOuZeroColunas :: Int->Int->Bool
-temZeroLinhasOuZeroColunas linhas colunas = 
-    if((temZeroLinhas linhas)||(colunas == 0))
-        then True
-    else False
-
-matrizEstaDeAcordoComAsDimensoesAuxiliar :: Int->Int->[[a]]->Bool
-matrizEstaDeAcordoComAsDimensoesAuxiliar linhas colunas [] = linhas == 0
-matrizEstaDeAcordoComAsDimensoesAuxiliar linhas colunas ((hh1:th1):t) =
-    if((length (hh1:th1)) /= colunas)
-        then False
-    else matrizEstaDeAcordoComAsDimensoesAuxiliar (linhas - 1) colunas t
-
-matrizEstaDeAcordoComAsDimensoes :: Int->Int->[[a]]->Bool
-matrizEstaDeAcordoComAsDimensoes linhas colunas [] = temZeroLinhasEZeroColunas linhas colunas
-matrizEstaDeAcordoComAsDimensoes linhas colunas ((hh1:th1):t) =
-    matrizEstaDeAcordoComAsDimensoesAuxiliar linhas colunas ((hh1:th1):t)
-
-estamosNaBorda :: Int->Int->Int->Int->Bool
-estamosNaBorda i j numeroDeLinhas numeroDeColunas =
-    if((i == 0) || (j == 0) || (i == (numeroDeLinhas-1)) || (j == (numeroDeColunas-1)))
-        then True
-    else False
-
-ehEntradaEEstaNaBorda :: Int->Int->Int->Int->Element->Bool
-ehEntradaEEstaNaBorda i j numeroDeLinhas numeroDeColunas elemento = 
-    if((estamosNaBorda i j numeroDeLinhas numeroDeColunas) == False)
-        then False
-    else if((show elemento) /= (show Entry))
-        then False
-    else True
-
-elementoDaPosicaoNaMatriz :: Int->Int->[[a]]->a
-elementoDaPosicaoNaMatriz i j ((hh1:th1):t) = 
-    if(i == 0)
-        then (hh1:th1) !! j
-    else elementoDaPosicaoNaMatriz (i-1) j t
-
-possuiEntradaNaBordaAuxiliar :: Int->Int->Int->Int->[[Element]]->Bool
-possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas [] = False
-possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas ((hh1:th1):t) = 
-    if(i >= numeroDeLinhas)
-        then False
-    else if (j >= numeroDeColunas)
-        then possuiEntradaNaBordaAuxiliar (i+1) 0 numeroDeLinhas numeroDeColunas ((hh1:th1):t)
-    else if((ehEntradaEEstaNaBorda i j numeroDeLinhas numeroDeColunas (elementoDaPosicaoNaMatriz i j ((hh1:th1):t))) == True)
-        then True
-    else possuiEntradaNaBordaAuxiliar i (j+1) numeroDeLinhas numeroDeColunas ((hh1:th1):t)
-
 validMine :: Mine->Bool
 validMine (Mine linhas colunas []) = False
-validMine (Mine linhas colunas ((hh1:th1):t)) = 
-    if(temZeroLinhasOuZeroColunas linhas colunas)
-        then False
-    else if((matrizEstaDeAcordoComAsDimensoes linhas colunas ((hh1:th1):t)) == False)
-        then False
-    else if((possuiEntradaNaBordaAuxiliar 0 0 linhas colunas ((hh1:th1):t)) == False)
-        then False
-    else True
+validMine (Mine linhas colunas ((x:xs):t)) = validaColuna (x:xs) colunas &&validaProporcoes (x:xs)linhas colunas&& possuiEntradaNaBordaAuxiliar 0 0 linhas colunas ((x:xs):t)
+    where
+      validaColuna :: [[Element]] -> Int ->Bool
+      validaColuna (x:xs)_ = True
+      validaColuna (x:xs)b = (length x ==b) && validaColuna
+               
+      validaProporcoes:: [[Element]] -> Int -> Int ->Bool
+      validaProporcoes  xs a b = length xs == a && validaColuna xs b
+
+      estamosNaBorda :: Int->Int->Int->Int->Bool
+      estamosNaBorda i j numeroDeLinhas numeroDeColunas =
+        if((i == 0) || (j == 0) || (i == (numeroDeLinhas-1)) || (j == (numeroDeColunas-1)))
+          then True
+        else False
+                      
+      possuiEntradaNaBordaAuxiliar :: Int->Int->Int->Int->[[Element]]->Bool
+      possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas [] = False
+      possuiEntradaNaBordaAuxiliar i j numeroDeLinhas numeroDeColunas ((x:xs):t) = 
+        if(i >= numeroDeLinhas)
+            then False
+        else if (j >= numeroDeColunas)
+            then possuiEntradaNaBordaAuxiliar (i+1) 0 numeroDeLinhas numeroDeColunas ((x:xs):t)
+        else if(elem Entry x && estamosNaBorda i j numeroDeLinhas numeroDeColunas)
+            then True
+        else possuiEntradaNaBordaAuxiliar i (j+1) numeroDeLinhas numeroDeColunas ((x:xs):t)
+        
+        
 -- %,%,%,%,%,%,%,%,%,%,%,%,%,%,%
 -- %,*,*,*,.,.,.,.,.,.,.,.,.,.,%
 -- %,*,*,*,.,.,., ,.,.,.,*,.,.,%
